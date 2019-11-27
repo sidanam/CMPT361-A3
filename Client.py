@@ -3,11 +3,30 @@ import socket
 import sys
 import os
 
-
 serverName = '127.0.0.1' #'localhost'
 serverPort = 13000
+
+
+def recvAll(connectionSocket):
+""" recves all content for a tcp connectionSocket, Just sends the length as plain asci
+"""
+        msg = connectionSocket.recv(2048).decode('ascii')
+        pos = msg.find("\r\n\r\n")
+        
+        contents = msg[pos:]
+        content_length = msg[:pos]
+
+        recv_length =+ len(contents)
+        # Get any remaining content from socket
+        while(content_length > recv_length):
+            msg = connectionSocket.recv(2048).decode('ascii')
+            contents += msg[pos:]
+            recv_length += len(msg)
+        
+        return contents
     
-    #Create client socket that useing IPv4 and TCP protocols 
+#Create client socket that useing IPv4 and TCP protocols 
+
 try:
     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 except socket.error as e:

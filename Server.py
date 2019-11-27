@@ -3,8 +3,18 @@ import socket
 import sys
 import os
 from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad, unpad
 
 
+def generateAESKey():
+    """ Generate the AES Symkey"""
+    KeyLen = 256
+    key = get_random_bytes(int(KeyLen/8))
+    return key
+    
+
+    
 port = 13000 #Associate port number to the server socket
 serverSocket = False
 
@@ -14,7 +24,7 @@ serverPrivateKeyFile=""
 clients = {"client1":"./Client/",
                "client2":"./Client/",
                "client3":"./Client/"}
-
+# Client_
 serverPublic='' # Server Private Key Cypher
 serverPrivate=''# Server Public key Cypher
 
@@ -33,7 +43,7 @@ def clientHandler(connectionSocket):
     @param connectionSocket - socket"""
 
     # TODO Recive client name
-    connectionSocket.send("".encode('ascii'))
+    connectionSocket.recv("")
 
     # if there is a client with that name, generate and send AES key.
     # encript with that clients public key.
@@ -44,7 +54,7 @@ def clientHandler(connectionSocket):
     
     clientName = connectionSocket.recv(2048)
     # dycrypt with server private key.
-
+    
     if clientName in clients:
         
 # - The server program generates a 256 AES key (called sym_key) and send it to the client encrypted with the corresponding client public key.
@@ -53,12 +63,41 @@ def clientHandler(connectionSocket):
     else:#  If no,
         print(f"The received client:{clientName} is invalid (Connection Terminated)")
         connectionSocket.send("Invalid clientName".encode('ascii'))
+        return;
 
-
+    AES_symkey = generateAESKey()
     
-    modifiedMessage = message.decode('ascii').upper()
+    connectionSocket.send(AES_symkey.encode('ascii')) # sends 256 
+    AESCipher = AES.new(key, AES.MODE_ECB)
+    
+# 4-[Server side] After validating the client identity, the server sends the client themessage “Enter filename:” encrypted with sym_key and prints to the server screen “Server is now processing client [client_name] request”
+
+    # Enter filename:
+    # --- Loop if file does not exist
+    # TODO encrypt this with the clients public key
+    connectionSocket.send(AESCipher.encrypt("Enter filename:".encode('ascii')))
+
+    # potent BUG : its here if it doesn't decrypt.
+    fileName = connectionSocket.recv(1024)# .decode('ascii')
+    fileName = AESCipher.decrypt(fileName)
+    fileName = fileName.decode('ascii')
+
+    print(f"file name: {fileName}")    # TESTING
+    with open(fileName,'r') as f:
+        contents = f.read()
+        encContents = AESCipher.encrypt(contents)
+        length = len(encContents)
+        print(f"Length:{length}")
+        # NOTE: sends over in cleartext the length of the encrypted potion
+        connectionSocket.send((f"{length}\r\n\r\n").encode('ascii'))
+        connectionSocket.send(encContents)
         
-    #Server sends the client the modified message
+    
+    
+    # opening of a file.
+    # enc with AES Sym key
+    
+    # Server sends the client the modified message
     print(modifiedMessage)
     connectionSocket.send(modifiedMessage.encode('ascii'))
     
