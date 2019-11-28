@@ -116,7 +116,7 @@ def server_handler():
 
         print(server_msg)
 
-        size_of_file = readFile(fileName)
+        size_of_file = recvAll(fileName)
 
         size_of_file = size_of_file + 16 - (size_of_file %16)
 
